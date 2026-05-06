@@ -1,8 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Invader } from "@/components/Invader";
 import { ArcadeButton } from "@/components/ArcadeButton";
 import { XPBar } from "@/components/XPBar";
 import { Starfield } from "@/components/Starfield";
+import { useAuth } from "@/hooks/useAuth";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -18,6 +19,9 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const goAuth = () => navigate({ to: user ? "/dashboard" : "/auth" });
   return (
     <div className="min-h-screen scanlines crt-flicker relative overflow-hidden">
       <Starfield />
@@ -34,7 +38,7 @@ function Index() {
           <a href="#feed" className="hover:text-neon-green transition">Feed</a>
           <a href="#feedback" className="hover:text-neon-yellow transition">Feedback</a>
         </nav>
-        <ArcadeButton variant="magenta" className="hidden sm:inline-block">Insert Coin</ArcadeButton>
+        <ArcadeButton variant="magenta" onClick={goAuth} className="hidden sm:inline-block">{user ? "Dashboard" : "Insert Coin"}</ArcadeButton>
       </header>
 
       {/* Hero */}
@@ -51,8 +55,8 @@ function Index() {
         </p>
 
         <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-5">
-          <ArcadeButton variant="green">Start Quest</ArcadeButton>
-          <ArcadeButton variant="cyan">Watch Demo</ArcadeButton>
+          <ArcadeButton variant="green" onClick={goAuth}>{user ? "Enter Dashboard" : "Start Quest"}</ArcadeButton>
+          <ArcadeButton variant="cyan" onClick={goAuth}>{user ? "Continue Mission" : "Sign In"}</ArcadeButton>
         </div>
 
         {/* XP preview card */}
