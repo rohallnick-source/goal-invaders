@@ -7,13 +7,22 @@ export function Starfield() {
       <div className="absolute top-[12%] invader-drift" style={{ animationDelay: "0s" }}>
         <Invader color="magenta" size={5} className="invader-float" />
       </div>
-      <div className="absolute top-[28%] invader-drift" style={{ animationDelay: "-4s", animationDuration: "16s" }}>
+      <div
+        className="absolute top-[28%] invader-drift"
+        style={{ animationDelay: "-4s", animationDuration: "16s" }}
+      >
         <Invader color="cyan" size={4} className="invader-float" />
       </div>
-      <div className="absolute top-[62%] invader-drift" style={{ animationDelay: "-8s", animationDuration: "20s" }}>
+      <div
+        className="absolute top-[62%] invader-drift"
+        style={{ animationDelay: "-8s", animationDuration: "20s" }}
+      >
         <Invader color="green" size={6} className="invader-float" />
       </div>
-      <div className="absolute top-[78%] invader-drift" style={{ animationDelay: "-2s", animationDuration: "14s" }}>
+      <div
+        className="absolute top-[78%] invader-drift"
+        style={{ animationDelay: "-2s", animationDuration: "14s" }}
+      >
         <Invader color="yellow" size={4} className="invader-float" />
       </div>
     </div>

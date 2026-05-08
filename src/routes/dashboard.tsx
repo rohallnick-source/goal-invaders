@@ -3,8 +3,8 @@ import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useServerFn } from "@tanstack/react-start";
-import { chatWithCopilot } from "@/server/copilot.functions";
-import { Invader } from "@/components/Invader";
+import { chatWithCopilot } from "@/copilot.functions";
+import { Invader, type InvaderColor } from "@/components/Invader";
 import { ArcadeButton } from "@/components/ArcadeButton";
 import { XPBar } from "@/components/XPBar";
 import { Starfield } from "@/components/Starfield";
@@ -37,6 +37,9 @@ const CADENCE_COLORS: Record<Cadence, "green" | "cyan" | "magenta" | "yellow"> =
 const RANK_FOR_LEVEL = (lvl: number) =>
   lvl >= 50 ? "COMMANDER" : lvl >= 25 ? "ACE" : lvl >= 10 ? "PILOT" : "ROOKIE";
 
+const isInvaderColor = (color: string): color is InvaderColor =>
+  color === "green" || color === "magenta" || color === "cyan" || color === "yellow";
+
 export const Route = createFileRoute("/dashboard")({
   head: () => ({ meta: [{ title: "Life XP — Mission Control" }] }),
   component: Dashboard,
@@ -57,7 +60,11 @@ function Dashboard() {
     const load = async () => {
       const [{ data: p }, { data: g }] = await Promise.all([
         supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
-        supabase.from("goals").select("*").eq("user_id", user.id).order("created_at", { ascending: false }),
+        supabase
+          .from("goals")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false }),
       ]);
       setProfile(p);
       setGoals(g ?? []);
@@ -66,10 +73,15 @@ function Dashboard() {
 
     const channel = supabase
       .channel("profile-" + user.id)
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "profiles", filter: `id=eq.${user.id}` },
-        (payload) => setProfile(payload.new as Profile))
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "profiles", filter: `id=eq.${user.id}` },
+        (payload) => setProfile(payload.new as Profile),
+      )
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user]);
 
   const signOut = async () => {
@@ -81,13 +93,16 @@ function Dashboard() {
     return (
       <div className="min-h-screen flex items-center justify-center scanlines">
         <Starfield />
-        <div className="font-pixel text-neon-green text-glow-green blink relative z-10">LOADING…</div>
+        <div className="font-pixel text-neon-green text-glow-green blink relative z-10">
+          LOADING…
+        </div>
       </div>
     );
   }
 
   const xpInLevel = profile.total_xp % 1000;
   const rank = RANK_FOR_LEVEL(profile.level);
+  const avatarColor = isInvaderColor(profile.avatar_color) ? profile.avatar_color : "green";
 
   return (
     <div className="min-h-screen scanlines crt-flicker relative">
@@ -95,14 +110,22 @@ function Dashboard() {
       <header className="relative z-10 px-4 sm:px-6 py-4 flex items-center justify-between border-b border-border/60 backdrop-blur-sm">
         <Link to="/" className="flex items-center gap-3">
           <Invader color="green" size={3} className="invader-float" />
-          <span className="font-pixel text-xs sm:text-sm text-neon-green text-glow-green">LIFE XP</span>
+          <span className="font-pixel text-xs sm:text-sm text-neon-green text-glow-green">
+            LIFE XP
+          </span>
         </Link>
         <div className="flex items-center gap-3">
           <div className="hidden sm:block text-right">
             <div className="font-pixel text-[10px] text-neon-magenta">{profile.display_name}</div>
-            <div className="font-pixel text-[9px] text-neon-yellow">LVL {profile.level} · {rank}</div>
+            <div className="font-pixel text-[9px] text-neon-yellow">
+              LVL {profile.level} · {rank}
+            </div>
           </div>
-          <button onClick={signOut} className="p-2 hover:text-neon-magenta transition" aria-label="Sign out">
+          <button
+            onClick={signOut}
+            className="p-2 hover:text-neon-magenta transition"
+            aria-label="Sign out"
+          >
             <LogOut className="w-4 h-4" />
           </button>
         </div>
@@ -112,10 +135,14 @@ function Dashboard() {
         {/* HUD */}
         <div className="bg-card/80 backdrop-blur p-5 pixel-border">
           <div className="flex items-center gap-4 mb-4">
-            <Invader color={profile.avatar_color as any} size={4} className="invader-float" />
+            <Invader color={avatarColor} size={4} className="invader-float" />
             <div className="flex-1">
-              <div className="font-pixel text-xs text-neon-magenta text-glow-magenta">{profile.display_name}</div>
-              <div className="text-xs text-muted-foreground">{rank} · {profile.total_xp} XP TOTAL</div>
+              <div className="font-pixel text-xs text-neon-magenta text-glow-magenta">
+                {profile.display_name}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {rank} · {profile.total_xp} XP TOTAL
+              </div>
             </div>
           </div>
           <XPBar level={profile.level} current={xpInLevel} max={1000} />
@@ -123,8 +150,12 @@ function Dashboard() {
 
         <Tabs defaultValue="copilot" className="w-full">
           <TabsList className="bg-card/60 pixel-border w-full grid grid-cols-2">
-            <TabsTrigger value="copilot" className="font-pixel text-[10px]">AI CO-PILOT</TabsTrigger>
-            <TabsTrigger value="goals" className="font-pixel text-[10px]">GOALS</TabsTrigger>
+            <TabsTrigger value="copilot" className="font-pixel text-[10px]">
+              AI CO-PILOT
+            </TabsTrigger>
+            <TabsTrigger value="goals" className="font-pixel text-[10px]">
+              GOALS
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="copilot" className="mt-4">
@@ -178,10 +209,14 @@ function CopilotChat({ onAddGoal }: { onAddGoal: (title: string, cadence: Cadenc
       .limit(50)
       .then(({ data }) => {
         if (data?.length) setMessages(data.filter((m) => m.role !== "system") as Msg[]);
-        else setMessages([{
-          role: "assistant",
-          content: "★ CO-PILOT ONLINE ★\n\nWhat's the boss you're trying to defeat? Tell me a goal — fitness, career, learning, anything — and I'll break it into daily, weekly, monthly and quarterly missions worth real XP.",
-        }]);
+        else
+          setMessages([
+            {
+              role: "assistant",
+              content:
+                "★ LIFE XP COACH ONLINE ★\n\nTell me the outcome you want over the next 12 weeks. I’ll ask a few questions first, then turn it into weekly milestones, daily quests, XP actions, and a simple scorecard.",
+            },
+          ]);
       });
   }, [user]);
 
@@ -200,8 +235,8 @@ function CopilotChat({ onAddGoal }: { onAddGoal: (title: string, cadence: Cadenc
       const { reply, error } = await callChat({ data: { messages: next } });
       if (error) toast.error(error);
       if (reply) setMessages((m) => [...m, { role: "assistant", content: reply }]);
-    } catch (e: any) {
-      toast.error(e.message ?? "Co-pilot offline");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Co-pilot offline");
     } finally {
       setBusy(false);
     }
@@ -212,7 +247,8 @@ function CopilotChat({ onAddGoal }: { onAddGoal: (title: string, cadence: Cadenc
     const re = /^[-*]\s+(.+?)\s*\[(daily|weekly|monthly|quarterly)\]/gim;
     const out: { title: string; cadence: Cadence }[] = [];
     let m;
-    while ((m = re.exec(text))) out.push({ title: m[1].trim(), cadence: m[2].toLowerCase() as Cadence });
+    while ((m = re.exec(text)))
+      out.push({ title: m[1].trim(), cadence: m[2].toLowerCase() as Cadence });
     return out;
   };
 
@@ -228,7 +264,9 @@ function CopilotChat({ onAddGoal }: { onAddGoal: (title: string, cadence: Cadenc
                 <Invader color={isUser ? "magenta" : "cyan"} size={3} />
               </div>
               <div className={`max-w-[85%] ${isUser ? "text-right" : ""}`}>
-                <div className={`font-pixel text-[9px] mb-1 ${isUser ? "text-neon-magenta" : "text-neon-cyan"}`}>
+                <div
+                  className={`font-pixel text-[9px] mb-1 ${isUser ? "text-neon-magenta" : "text-neon-cyan"}`}
+                >
                   {isUser ? "YOU" : "CO-PILOT"}
                 </div>
                 <div className="text-sm whitespace-pre-wrap leading-relaxed text-foreground bg-background/40 p-3 pixel-border inline-block text-left">
@@ -263,7 +301,7 @@ function CopilotChat({ onAddGoal }: { onAddGoal: (title: string, cadence: Cadenc
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), send())}
-          placeholder="Describe your goal, ask for a plan…"
+          placeholder="Example: I want to lose 20 pounds in 12 weeks..."
           disabled={busy}
         />
         <ArcadeButton variant="green" onClick={send} disabled={busy}>
@@ -277,8 +315,14 @@ function CopilotChat({ onAddGoal }: { onAddGoal: (title: string, cadence: Cadenc
 /* ─────────── Goals board ─────────── */
 
 function GoalsBoard({
-  goals, setGoals, userId,
-}: { goals: Goal[]; setGoals: React.Dispatch<React.SetStateAction<Goal[]>>; userId: string }) {
+  goals,
+  setGoals,
+  userId,
+}: {
+  goals: Goal[];
+  setGoals: React.Dispatch<React.SetStateAction<Goal[]>>;
+  userId: string;
+}) {
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState("");
   const [desc, setDesc] = useState("");
@@ -287,16 +331,22 @@ function GoalsBoard({
   const create = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
-    const { data, error } = await supabase.from("goals").insert({
-      user_id: userId,
-      title: title.trim(),
-      description: desc.trim() || null,
-      cadence,
-      xp_reward: XP_BY_CADENCE[cadence],
-    }).select().single();
+    const { data, error } = await supabase
+      .from("goals")
+      .insert({
+        user_id: userId,
+        title: title.trim(),
+        description: desc.trim() || null,
+        cadence,
+        xp_reward: XP_BY_CADENCE[cadence],
+      })
+      .select()
+      .single();
     if (error) return toast.error(error.message);
     setGoals((g) => [data, ...g]);
-    setTitle(""); setDesc(""); setShowForm(false);
+    setTitle("");
+    setDesc("");
+    setShowForm(false);
     toast.success("Mission added!");
   };
 
@@ -308,7 +358,7 @@ function GoalsBoard({
       .select()
       .single();
     if (error) return toast.error(error.message);
-    setGoals((g) => g.map((x) => x.id === goal.id ? data : x));
+    setGoals((g) => g.map((x) => (x.id === goal.id ? data : x)));
     if (!goal.completed) toast.success(`+${goal.xp_reward} XP! ★`);
   };
 
@@ -331,19 +381,38 @@ function GoalsBoard({
 
       {showForm && (
         <form onSubmit={create} className="bg-card/80 p-4 pixel-border space-y-3">
-          <Input placeholder="Mission title" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} required />
-          <Textarea placeholder="Optional details…" value={desc} onChange={(e) => setDesc(e.target.value)} maxLength={500} />
+          <Input
+            placeholder="Mission title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            maxLength={120}
+            required
+          />
+          <Textarea
+            placeholder="Optional details…"
+            value={desc}
+            onChange={(e) => setDesc(e.target.value)}
+            maxLength={500}
+          />
           <div className="flex flex-wrap gap-2">
             {cadences.map((c) => (
-              <button key={c} type="button" onClick={() => setCadence(c)}
+              <button
+                key={c}
+                type="button"
+                onClick={() => setCadence(c)}
                 className={`font-pixel text-[9px] px-3 py-2 pixel-border transition ${
-                  cadence === c ? "bg-neon-green/20 text-neon-green text-glow-green" : "bg-background/40 text-muted-foreground hover:text-foreground"
-                }`}>
+                  cadence === c
+                    ? "bg-neon-green/20 text-neon-green text-glow-green"
+                    : "bg-background/40 text-muted-foreground hover:text-foreground"
+                }`}
+              >
                 {c.toUpperCase()} · {XP_BY_CADENCE[c]} XP
               </button>
             ))}
           </div>
-          <ArcadeButton type="submit" variant="green">Deploy Mission</ArcadeButton>
+          <ArcadeButton type="submit" variant="green">
+            Deploy Mission
+          </ArcadeButton>
         </form>
       )}
 
@@ -366,14 +435,33 @@ function GoalsBoard({
               ) : (
                 <ul className="space-y-2">
                   {list.map((g) => (
-                    <li key={g.id} className={`flex items-start gap-3 p-2 bg-background/40 transition ${g.completed ? "opacity-50" : ""}`}>
-                      <Checkbox checked={g.completed} onCheckedChange={() => toggle(g)} className="mt-1" />
+                    <li
+                      key={g.id}
+                      className={`flex items-start gap-3 p-2 bg-background/40 transition ${g.completed ? "opacity-50" : ""}`}
+                    >
+                      <Checkbox
+                        checked={g.completed}
+                        onCheckedChange={() => toggle(g)}
+                        className="mt-1"
+                      />
                       <div className="flex-1 min-w-0">
-                        <div className={`text-sm ${g.completed ? "line-through" : ""}`}>{g.title}</div>
-                        {g.description && <div className="text-xs text-muted-foreground mt-0.5">{g.description}</div>}
-                        <div className="font-pixel text-[9px] text-neon-yellow mt-1">+{g.xp_reward} XP</div>
+                        <div className={`text-sm ${g.completed ? "line-through" : ""}`}>
+                          {g.title}
+                        </div>
+                        {g.description && (
+                          <div className="text-xs text-muted-foreground mt-0.5">
+                            {g.description}
+                          </div>
+                        )}
+                        <div className="font-pixel text-[9px] text-neon-yellow mt-1">
+                          +{g.xp_reward} XP
+                        </div>
                       </div>
-                      <button onClick={() => remove(g.id)} className="text-muted-foreground hover:text-neon-magenta transition" aria-label="Delete">
+                      <button
+                        onClick={() => remove(g.id)}
+                        className="text-muted-foreground hover:text-neon-magenta transition"
+                        aria-label="Delete"
+                      >
                         <Trash2 className="w-3 h-3" />
                       </button>
                     </li>

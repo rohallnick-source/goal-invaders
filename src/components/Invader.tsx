@@ -1,5 +1,7 @@
+export type InvaderColor = "green" | "magenta" | "cyan" | "yellow";
+
 type InvaderProps = {
-  color?: "green" | "magenta" | "cyan" | "yellow";
+  color?: InvaderColor;
   size?: number;
   className?: string;
 };
@@ -13,14 +15,14 @@ const colorMap = {
 
 // 11x8 classic invader grid
 const PIXELS = [
-  [0,0,1,0,0,0,0,0,1,0,0],
-  [0,0,0,1,0,0,0,1,0,0,0],
-  [0,0,1,1,1,1,1,1,1,0,0],
-  [0,1,1,0,1,1,1,0,1,1,0],
-  [1,1,1,1,1,1,1,1,1,1,1],
-  [1,0,1,1,1,1,1,1,1,0,1],
-  [1,0,1,0,0,0,0,0,1,0,1],
-  [0,0,0,1,1,0,1,1,0,0,0],
+  [0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0],
+  [0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+  [0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0],
+  [0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0],
+  [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+  [1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1],
+  [1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1],
+  [0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0],
 ];
 
 export function Invader({ color = "green", size = 6, className = "" }: InvaderProps) {

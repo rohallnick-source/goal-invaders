@@ -46,8 +46,8 @@ function AuthPage() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       }
-    } catch (err: any) {
-      toast.error(err.message ?? "Auth failed");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Auth failed");
     } finally {
       setBusy(false);
     }
@@ -88,8 +88,21 @@ function AuthPage() {
               maxLength={32}
             />
           )}
-          <Input type="email" placeholder="email@galaxy.io" value={email} onChange={(e) => setEmail(e.target.value)} required />
-          <Input type="password" placeholder="Password (min 6)" value={password} onChange={(e) => setPassword(e.target.value)} minLength={6} required />
+          <Input
+            type="email"
+            placeholder="email@galaxy.io"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+          <Input
+            type="password"
+            placeholder="Password (min 6)"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            minLength={6}
+            required
+          />
           <ArcadeButton type="submit" variant="green" disabled={busy} className="w-full">
             {busy ? "..." : mode === "signin" ? "Press Start" : "Begin Quest"}
           </ArcadeButton>
