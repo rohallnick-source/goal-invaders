@@ -191,7 +191,11 @@ async function addGoalQuick(
 
 type Msg = { role: "user" | "assistant"; content: string };
 
-function CopilotChat({ onAddGoal }: { onAddGoal: (title: string, cadence: Cadence) => void }) {
+function CopilotChat({
+  onAddGoal,
+}: {
+  onAddGoal: (title: string, cadence: Cadence) => Promise<void>;
+}) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
@@ -224,10 +228,10 @@ function CopilotChat({ onAddGoal }: { onAddGoal: (title: string, cadence: Cadenc
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
-  const send = async () => {
-    const text = input.trim();
+  const send = async (override?: string) => {
+    const text = (override ?? input).trim();
     if (!text || busy) return;
-    setInput("");
+    if (!override) setInput("");
     const next: Msg[] = [...messages, { role: "user", content: text }];
     setMessages(next);
     setBusy(true);
@@ -244,17 +248,46 @@ function CopilotChat({ onAddGoal }: { onAddGoal: (title: string, cadence: Cadenc
 
   // Parse "- Goal text [cadence]" lines from the latest assistant message
   const parseGoals = (text: string) => {
-    const re = /^[-*]\s+(.+?)\s*\[(daily|weekly|monthly|quarterly)\]/gim;
+    const re = /^\s*(?:[-*]|\d+[.)])\s+(.+?)\s*\[(daily|weekly|monthly|quarterly)\]\s*$/gim;
     const out: { title: string; cadence: Cadence }[] = [];
     let m;
-    while ((m = re.exec(text)))
-      out.push({ title: m[1].trim(), cadence: m[2].toLowerCase() as Cadence });
+    while ((m = re.exec(text))) {
+      const title = m[1]
+        .replace(/\*\*/g, "")
+        .replace(/^["']|["']$/g, "")
+        .trim();
+      if (title) out.push({ title, cadence: m[2].toLowerCase() as Cadence });
+    }
     return out;
   };
+
+  const addAllGoals = async (items: { title: string; cadence: Cadence }[]) => {
+    for (const item of items) await onAddGoal(item.title, item.cadence);
+  };
+
+  const starterPrompts = [
+    "I want to build a 12-week plan for a fitness goal.",
+    "I want to build a 12-week plan for making more money.",
+    "I know I need to improve my life, but I need help choosing the right goal.",
+  ];
 
   return (
     <div className="bg-card/80 backdrop-blur pixel-border flex flex-col h-[60vh] min-h-[420px]">
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4">
+        {messages.length <= 1 && (
+          <div className="flex flex-wrap gap-2">
+            {starterPrompts.map((prompt) => (
+              <button
+                key={prompt}
+                onClick={() => send(prompt)}
+                disabled={busy}
+                className="font-pixel text-[9px] px-2 py-1 pixel-border bg-background/60 hover:bg-neon-cyan/10 hover:text-neon-cyan transition text-left"
+              >
+                {prompt}
+              </button>
+            ))}
+          </div>
+        )}
         {messages.map((m, i) => {
           const isUser = m.role === "user";
           const suggestions = !isUser ? parseGoals(m.content) : [];
@@ -274,6 +307,12 @@ function CopilotChat({ onAddGoal }: { onAddGoal: (title: string, cadence: Cadenc
                 </div>
                 {suggestions.length > 0 && (
                   <div className="mt-2 flex flex-wrap gap-2 justify-start">
+                    <button
+                      onClick={() => addAllGoals(suggestions)}
+                      className="font-pixel text-[9px] px-2 py-1 pixel-border bg-neon-green/10 text-neon-green hover:bg-neon-green/20 transition"
+                    >
+                      + ADD ALL MISSIONS
+                    </button>
                     {suggestions.map((s, j) => (
                       <button
                         key={j}
