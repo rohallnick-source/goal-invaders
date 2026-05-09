@@ -20,24 +20,79 @@ function AuthPage() {
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [callsign, setCallsign] = useState("");
+  const [username, setUsername] = useState("");
+  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
+  const [usernameSuggestions, setUsernameSuggestions] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (!loading && user) navigate({ to: "/dashboard" });
   }, [user, loading, navigate]);
 
+  const normalizeUsername = (value: string) =>
+    value
+      .toLowerCase()
+      .replace(/[^a-z0-9_]/g, "")
+      .slice(0, 24);
+
+  const suggestUsernames = (base: string) => {
+    const clean = normalizeUsername(base) || "pilot";
+    return [17, 42, 88].map((n) => `${clean}${n}`);
+  };
+
+  const checkUsername = async (value = username) => {
+    const clean = normalizeUsername(value);
+    setUsername(clean);
+    setUsernameSuggestions([]);
+
+    if (!clean || mode !== "signup") {
+      setUsernameAvailable(null);
+      return false;
+    }
+
+    if (clean.length < 3) {
+      setUsernameAvailable(false);
+      setUsernameSuggestions(suggestUsernames(clean));
+      return false;
+    }
+
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("username", clean)
+      .maybeSingle();
+
+    if (error) {
+      setUsernameAvailable(null);
+      toast.error(error.message);
+      return false;
+    }
+
+    const available = !data;
+    setUsernameAvailable(available);
+    if (!available) setUsernameSuggestions(suggestUsernames(clean));
+    return available;
+  };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
     try {
       if (mode === "signup") {
+        const cleanUsername = normalizeUsername(username);
+        if (!cleanUsername || cleanUsername.length < 3) {
+          throw new Error("Username must be at least 3 letters, numbers, or underscores.");
+        }
+
+        const available = usernameAvailable === true || (await checkUsername(cleanUsername));
+        if (!available) throw new Error("That username is already taken.");
+
         const { error } = await supabase.auth.signUp({
           email,
           password,
           options: {
             emailRedirectTo: `${window.location.origin}/dashboard`,
-            data: { display_name: callsign || undefined },
+            data: { display_name: cleanUsername, username: cleanUsername },
           },
         });
         if (error) throw error;
@@ -81,12 +136,46 @@ function AuthPage() {
 
         <form onSubmit={submit} className="space-y-4">
           {mode === "signup" && (
-            <Input
-              placeholder="Callsign (optional)"
-              value={callsign}
-              onChange={(e) => setCallsign(e.target.value)}
-              maxLength={32}
-            />
+            <div className="space-y-2">
+              <Input
+                placeholder="Username"
+                value={username}
+                onChange={(e) => {
+                  setUsername(normalizeUsername(e.target.value));
+                  setUsernameAvailable(null);
+                  setUsernameSuggestions([]);
+                }}
+                onBlur={() => checkUsername()}
+                minLength={3}
+                maxLength={24}
+                required
+              />
+              {usernameAvailable === true && (
+                <p className="text-xs text-neon-green">Username available.</p>
+              )}
+              {usernameAvailable === false && (
+                <div className="space-y-1">
+                  <p className="text-xs text-neon-magenta">
+                    Username unavailable. Try one of these:
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {usernameSuggestions.map((name) => (
+                      <button
+                        key={name}
+                        type="button"
+                        onClick={() => {
+                          setUsername(name);
+                          setUsernameAvailable(null);
+                        }}
+                        className="font-pixel text-[9px] px-2 py-1 pixel-border bg-background/60 hover:text-neon-cyan transition"
+                      >
+                        {name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           )}
           <Input
             type="email"

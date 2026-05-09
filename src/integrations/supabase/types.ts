@@ -83,6 +83,7 @@ export type Database = {
           level: number;
           total_xp: number;
           updated_at: string;
+          username: string | null;
         };
         Insert: {
           avatar_color?: string;
@@ -92,6 +93,7 @@ export type Database = {
           level?: number;
           total_xp?: number;
           updated_at?: string;
+          username?: string | null;
         };
         Update: {
           avatar_color?: string;
@@ -101,6 +103,7 @@ export type Database = {
           level?: number;
           total_xp?: number;
           updated_at?: string;
+          username?: string | null;
         };
         Relationships: [];
       };

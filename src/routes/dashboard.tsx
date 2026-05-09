@@ -196,7 +196,7 @@ function CopilotChat({
 }: {
   onAddGoal: (title: string, cadence: Cadence) => Promise<void>;
 }) {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -236,7 +236,14 @@ function CopilotChat({
     setMessages(next);
     setBusy(true);
     try {
-      const { reply, error } = await callChat({ data: { messages: next } });
+      if (!session?.access_token) {
+        toast.error("Session expired. Sign in again.");
+        return;
+      }
+
+      const { reply, error } = await callChat({
+        data: { accessToken: session.access_token, messages: next },
+      });
       if (error) toast.error(error);
       if (reply) setMessages((m) => [...m, { role: "assistant", content: reply }]);
     } catch (e) {
