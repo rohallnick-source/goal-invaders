@@ -145,27 +145,27 @@ export const chatWithCopilot = createServerFn({ method: "POST" })
       });
     }
 
-    const apiKey = process.env.LOVABLE_API_KEY;
-    if (!apiKey) return { error: "AI not configured", reply: "" };
+    const apiKey = process.env.OPENAI_API_KEY;
+    const model = process.env.OPENAI_MODEL || "gpt-5.4-mini";
+    if (!apiKey) return { error: "AI not configured. Add OPENAI_API_KEY.", reply: "" };
 
     try {
-      const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      const res = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${apiKey}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
+          model,
           messages: [{ role: "system", content: SYSTEM_PROMPT }, ...data.messages],
-          temperature: 0.45,
-          max_tokens: 1800,
+          max_completion_tokens: 1800,
         }),
       });
 
       if (res.status === 429) return { error: "Rate limit — try again in a moment.", reply: "" };
       if (res.status === 402)
-        return { error: "AI credits exhausted. Add credits in workspace settings.", reply: "" };
+        return { error: "AI credits exhausted. Check OpenAI billing.", reply: "" };
       if (!res.ok) return { error: `AI error ${res.status}`, reply: "" };
 
       const json = await res.json();
