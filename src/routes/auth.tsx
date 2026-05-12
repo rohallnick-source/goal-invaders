@@ -64,7 +64,7 @@ function AuthPage() {
     if (error) {
       setUsernameAvailable(null);
       toast.error(error.message);
-      return false;
+      throw error;
     }
 
     const available = !data;
@@ -83,7 +83,16 @@ function AuthPage() {
           throw new Error("Username must be at least 3 letters, numbers, or underscores.");
         }
 
-        const available = usernameAvailable === true || (await checkUsername(cleanUsername));
+        let available = usernameAvailable === true;
+        if (!available) {
+          try {
+            available = await checkUsername(cleanUsername);
+          } catch {
+            throw new Error(
+              "Could not check username availability. Database setup needs attention.",
+            );
+          }
+        }
         if (!available) throw new Error("That username is already taken.");
 
         const { error } = await supabase.auth.signUp({
