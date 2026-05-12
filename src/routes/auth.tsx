@@ -95,7 +95,7 @@ function AuthPage() {
         }
         if (!available) throw new Error("That username is already taken.");
 
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -104,10 +104,16 @@ function AuthPage() {
           },
         });
         if (error) throw error;
-        toast.success("Pilot registered. Entering arcade…");
+        if (data.session) {
+          toast.success("Pilot registered. Entering arcade...");
+          await navigate({ to: "/dashboard" });
+        } else {
+          toast.success("Pilot registered. Check your email to confirm your account.");
+        }
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
+        await navigate({ to: "/dashboard" });
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Auth failed");

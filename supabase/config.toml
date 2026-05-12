@@ -1,1 +1,27 @@
 project_id = "faiajroksouaxxaeeczb"
+
+[auth]
+site_url = "https://www.life-xp.com"
+additional_redirect_urls = [
+  "https://www.life-xp.com",
+  "https://goal-invaders-rohallnick-sources-projects.vercel.app/",
+  "https://goal-invaders-rohallnick-sources-projects.vercel.app/**",
+  "https://goal-*-invaders-rohallnick-sources-projects.vercel.app",
+  "https://goal-*-invaders-rohallnick-sources-projects.vercel.app/**",
+  "https://goal-invaders-rohallnick-source-rohallnick-sources-projects.vercel.app/",
+  "https://goal-invaders-rohallnick-source-rohallnick-sources-projects.vercel.app/**",
+  "https://goal-*-invaders-rohallnick-source-rohallnick-sources-projects.vercel.app",
+  "https://goal-*-invaders-rohallnick-source-rohallnick-sources-projects.vercel.app/**",
+  "http://localhost:5173",
+  "http://localhost:3000",
+]
+
+[auth.email]
+enable_signup = true
+enable_confirmations = false
+max_frequency = "1m0s"
+otp_length = 8
+
+[auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true
